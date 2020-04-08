@@ -17,7 +17,7 @@ fun main() {
 
         Dagpenger(this, ytelseskontraktV3)
         Arbeidsavklaringspenger(this, ytelseskontraktV3)
-    }
+    }.start()
 }
 
 private fun String.readFile() = Files.readString(Paths.get(this))

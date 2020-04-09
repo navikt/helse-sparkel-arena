@@ -44,6 +44,6 @@ spec:
   - name: KAFKA_RAPID_TOPIC
     value: helse-rapid-v1
   - name: STS_URL
-    value: https://sts-q1.preprod.local/SecurityTokenServiceProvider/
+    value: https://sts-q2.preprod.local/SecurityTokenServiceProvider/
   - name: YTELSESKONTRAKT_BASE_URL
-    value: https://arena-q1.adeo.no/ail_ws/Ytelseskontrakt_v3
+    value: https://arena-q2.adeo.no/ail_ws/Ytelseskontrakt_v3

@@ -53,7 +53,10 @@ internal class Arena(
                 .flatMap {
                     it.ihtVedtak
                     .filter { it.vedtaksperiode.fom != null && it.vedtaksperiode.tom != null }
-                    .map { it.vedtaksperiode.fom.asLocalDate() to it.vedtaksperiode.tom.asLocalDate() }
+                    .map { mapOf(
+                        "fom" to it.vedtaksperiode.fom.asLocalDate(),
+                        "tom" to it.vedtaksperiode.tom.asLocalDate()
+                    ) }
                 }
                 .also { packet["@løsning"] = mapOf(behov to it) }
             context.send(packet.toJson())

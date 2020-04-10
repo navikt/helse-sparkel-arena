@@ -41,17 +41,30 @@ internal class Arbeidsavklaringspenger(
             keyValue("id", packet["@id"].asText()),
             keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText())
         )
-        ytelseskontraktV3.hentYtelseskontraktListe(WSHentYtelseskontraktListeRequest().apply {
-            personidentifikator = packet["fødselsnummer"].asText()
-            periode = WSPeriode().apply {
-                fom = packet["periodeFom"].asLocalDate().asXmlGregorianCalendar()
-                tom = packet["periodeTom"].asLocalDate().asXmlGregorianCalendar()
-            }
-        })
+        try {
+            ytelseskontraktV3.hentYtelseskontraktListe(WSHentYtelseskontraktListeRequest().apply {
+                personidentifikator = packet["fødselsnummer"].asText()
+                periode = WSPeriode().apply {
+                    fom = packet["periodeFom"].asLocalDate().asXmlGregorianCalendar()
+                    tom = packet["periodeTom"].asLocalDate().asXmlGregorianCalendar()
+                }
+            })
+        } catch (err: Exception) {
+            packet.error("feil ved behov {} for {}: ${err.message}",
+                keyValue("id", packet["@id"].asText()),
+                keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()),
+                err
+            )
+        }
     }
 
     private fun JsonMessage.info(format: String, vararg args: Any) {
         log.info(format, *args)
         sikkerlogg.info(format, *args)
+    }
+
+    private fun JsonMessage.error(format: String, vararg args: Any) {
+        log.error(format, *args)
+        sikkerlogg.error(format, *args)
     }
 }

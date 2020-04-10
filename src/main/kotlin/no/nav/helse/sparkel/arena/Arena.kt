@@ -11,16 +11,16 @@ import no.nav.tjeneste.virksomhet.ytelseskontrakt.v3.informasjon.ytelseskontrakt
 import no.nav.tjeneste.virksomhet.ytelseskontrakt.v3.meldinger.WSHentYtelseskontraktListeRequest
 import org.slf4j.LoggerFactory
 
-internal class Arbeidsavklaringspenger(
+internal class Arena(
     rapidsConnection: RapidsConnection,
-    private val ytelseskontraktV3: YtelseskontraktV3
+    private val ytelseskontraktV3: YtelseskontraktV3,
+    private val ytelsetype: String,
+    private val behov: String
 ) :
     River.PacketListener {
     private companion object {
         private val sikkerlogg = LoggerFactory.getLogger("tjenestekall")
-        private val log = LoggerFactory.getLogger(Arbeidsavklaringspenger::class.java)
-
-        private const val behov = "Arbeidsavklaringspenger"
+        private val log = LoggerFactory.getLogger(Arena::class.java)
     }
 
     init {
@@ -48,7 +48,15 @@ internal class Arbeidsavklaringspenger(
                     fom = packet["periodeFom"].asLocalDate().asXmlGregorianCalendar()
                     tom = packet["periodeTom"].asLocalDate().asXmlGregorianCalendar()
                 }
-            })
+            }).ytelseskontraktListe
+                .filter { ytelsetype == it.ytelsestype }
+                .flatMap {
+                    it.ihtVedtak
+                    .filter { it.vedtaksperiode.fom != null && it.vedtaksperiode.tom != null }
+                    .map { it.vedtaksperiode.fom.asLocalDate() to it.vedtaksperiode.tom.asLocalDate() }
+                }
+                .also { packet["@løsning"] = mapOf(behov to it) }
+            context.send(packet.toJson())
         } catch (err: Exception) {
             packet.error("feil ved behov {} for {}: ${err.message}",
                 keyValue("id", packet["@id"].asText()),

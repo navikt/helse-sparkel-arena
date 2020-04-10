@@ -12,11 +12,9 @@ fun main() {
             username = "/var/run/secrets/nais.io/service_user/username".readFile(),
             password = "/var/run/secrets/nais.io/service_user/password".readFile()
         )
-
         val ytelseskontraktV3 = YtelseskontraktFactory.create(env.getValue("YTELSESKONTRAKT_BASE_URL"), stsClientWs)
-
-        Dagpenger(this, ytelseskontraktV3)
-        Arbeidsavklaringspenger(this, ytelseskontraktV3)
+        Arena(this, ytelseskontraktV3, "Dagpenger", "Dagpenger")
+        Arena(this, ytelseskontraktV3, "Arbeidsavklaringspenger", "Arbeidsavklaringspenger")
     }.start()
 }
 

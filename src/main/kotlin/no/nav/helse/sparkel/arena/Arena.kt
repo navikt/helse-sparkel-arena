@@ -59,7 +59,13 @@ internal class Arena(
                     ) }
                 }
                 .also { packet["@løsning"] = mapOf(behov to it) }
-            context.send(packet.toJson())
+            context.send(packet.toJson()).also {
+                sikkerlogg.info(
+                    "sender {} som {}",
+                    keyValue("id", packet["@id"].asText()),
+                    packet.toJson()
+                )
+            }
         } catch (err: Exception) {
             packet.error("feil ved behov {} for {}: ${err.message}",
                 keyValue("id", packet["@id"].asText()),

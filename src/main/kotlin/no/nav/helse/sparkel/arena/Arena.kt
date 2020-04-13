@@ -10,6 +10,7 @@ import no.nav.tjeneste.virksomhet.ytelseskontrakt.v3.YtelseskontraktV3
 import no.nav.tjeneste.virksomhet.ytelseskontrakt.v3.informasjon.ytelseskontrakt.WSPeriode
 import no.nav.tjeneste.virksomhet.ytelseskontrakt.v3.meldinger.WSHentYtelseskontraktListeRequest
 import org.slf4j.LoggerFactory
+import java.time.LocalDate
 
 internal class Arena(
     rapidsConnection: RapidsConnection,
@@ -52,11 +53,12 @@ internal class Arena(
                 .filter { ytelsetype == it.ytelsestype }
                 .flatMap {
                     it.ihtVedtak
-                    .filter { it.vedtaksperiode.fom != null && it.vedtaksperiode.tom != null }
-                    .map { mapOf(
-                        "fom" to it.vedtaksperiode.fom.asLocalDate(),
-                        "tom" to it.vedtaksperiode.tom.asLocalDate()
-                    ) }
+                        .filter { it.periodetypeForYtelse != "Stans" }
+                        .filter { it.vedtaksperiode.fom != null }
+                        .map { mapOf(
+                            "fom" to it.vedtaksperiode.fom.asLocalDate(),
+                            "tom" to (it.vedtaksperiode.tom?.asLocalDate() ?: LocalDate.now())
+                        ) }
                 }
                 .also { packet["@løsning"] = mapOf(behov to it) }
             context.send(packet.toJson()).also {

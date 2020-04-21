@@ -60,7 +60,11 @@ internal class Arena(
                             "tom" to (it.vedtaksperiode.tom?.asLocalDate() ?: LocalDate.now())
                         ) }
                 }
-                .also { packet["@løsning"] = mapOf(behov to it) }
+                .also { packet["@løsning"] = mapOf(
+                    behov to mapOf(
+                        "vedtaksperioder" to it
+                    )
+                ) }
             context.send(packet.toJson()).also {
                 sikkerlogg.info(
                     "sender {} som {}",

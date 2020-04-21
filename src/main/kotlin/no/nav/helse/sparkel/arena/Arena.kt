@@ -15,6 +15,7 @@ import no.nav.tjeneste.virksomhet.ytelseskontrakt.v3.YtelseskontraktV3
 import no.nav.tjeneste.virksomhet.ytelseskontrakt.v3.informasjon.ytelseskontrakt.WSPeriode
 import no.nav.tjeneste.virksomhet.ytelseskontrakt.v3.meldinger.WSHentYtelseskontraktListeRequest
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import java.time.LocalDate
 
 internal class Arena(
@@ -44,12 +45,22 @@ internal class Arena(
     }
 
     override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
-        packet.info(
-            "løser behov {} for {}",
-            keyValue("id", packet["@id"].asText()),
-            keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText())
-        )
+        val behovId = packet["@id"].asText()
+        val vedtaksperiodeId = packet["vedtaksperiodeId"].asText()
+        withMDC(mapOf(
+            "behovId" to behovId,
+            "vedtaksperiodeId" to vedtaksperiodeId
+        )) {
+            try {
+                packet.info("løser behov {} for {}", keyValue("id", behovId), keyValue("vedtaksperiodeId", vedtaksperiodeId))
+                håndter(packet, context)
+            } catch (err: Exception) {
+                packet.error("feil ved behov {} for {}: ${err.message}", keyValue("id", behovId), keyValue("vedtaksperiodeId", vedtaksperiodeId), err)
+            }
+        }
+    }
 
+    private fun håndter(packet: JsonMessage, context: RapidsConnection.MessageContext) {
         try {
             // ikke bruk responsen til noe ennå
             hentMeldekortUtbetalingsgrunnlag(
@@ -67,27 +78,19 @@ internal class Arena(
             )
         }
 
-        try {
-            packet["@løsning"] = mapOf(
-                behov to mapOf(
-                    "vedtaksperioder" to hentYtelsekontrakt(
-                        fødselsnummer = packet["fødselsnummer"].asText(),
-                        søkevindu = packet["periodeFom"].asLocalDate() to packet["periodeTom"].asLocalDate()
-                    )
+        packet["@løsning"] = mapOf(
+            behov to mapOf(
+                "vedtaksperioder" to hentYtelsekontrakt(
+                    fødselsnummer = packet["fødselsnummer"].asText(),
+                    søkevindu = packet["periodeFom"].asLocalDate() to packet["periodeTom"].asLocalDate()
                 )
             )
-            context.send(packet.toJson()).also {
-                sikkerlogg.info(
-                    "sender {} som {}",
-                    keyValue("id", packet["@id"].asText()),
-                    packet.toJson()
-                )
-            }
-        } catch (err: Exception) {
-            packet.error("feil ved behov {} for {}: ${err.message}",
+        )
+        context.send(packet.toJson()).also {
+            sikkerlogg.info(
+                "sender {} som {}",
                 keyValue("id", packet["@id"].asText()),
-                keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()),
-                err
+                packet.toJson()
             )
         }
     }
@@ -124,6 +127,16 @@ internal class Arena(
                 add(tema)
             }
         }).meldekortUtbetalingsgrunnlagListe
+
+    private fun withMDC(context: Map<String, String>, block: () -> Unit) {
+        val contextMap = MDC.getCopyOfContextMap() ?: emptyMap()
+        try {
+            MDC.setContextMap(contextMap + context)
+            block()
+        } finally {
+            MDC.setContextMap(contextMap)
+        }
+    }
 
     private fun JsonMessage.info(format: String, vararg args: Any) {
         log.info(format, *args)

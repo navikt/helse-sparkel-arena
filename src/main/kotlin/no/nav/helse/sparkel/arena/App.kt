@@ -13,8 +13,9 @@ fun main() {
             password = "/var/run/secrets/nais.io/service_user/password".readFile()
         )
         val ytelseskontraktV3 = YtelseskontraktFactory.create(env.getValue("YTELSESKONTRAKT_BASE_URL"), stsClientWs)
-        Arena(this, ytelseskontraktV3, "Dagpenger", "Dagpenger")
-        Arena(this, ytelseskontraktV3, "Arbeidsavklaringspenger", "Arbeidsavklaringspenger")
+        val meldekortUtbetalingsgrunnlagV1 = MeldekortUtbetalingsgrunnlagV1Factory.create(env.getValue("MELDEKORT_UTBETALINGSGRUNNLAG_ENDPOINTURL"), stsClientWs)
+        Arena(this, ytelseskontraktV3, meldekortUtbetalingsgrunnlagV1, "Dagpenger", "DAG", "Dagpenger")
+        Arena(this, ytelseskontraktV3, meldekortUtbetalingsgrunnlagV1, "Arbeidsavklaringspenger", "AAP", "Arbeidsavklaringspenger")
     }.start()
 }
 

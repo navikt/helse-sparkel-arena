@@ -47,3 +47,5 @@ spec:
     value: https://sts-q2.preprod.local/SecurityTokenServiceProvider/
   - name: YTELSESKONTRAKT_BASE_URL
     value: https://arena-q2.adeo.no/ail_ws/Ytelseskontrakt_v3
+  - name: MELDEKORT_UTBETALINGSGRUNNLAG_ENDPOINTURL
+    value: https://arena-q2.adeo.no/ail_ws/MeldekortUtbetalingsgrunnlag_v1

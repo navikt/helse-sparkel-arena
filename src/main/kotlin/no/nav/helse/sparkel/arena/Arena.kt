@@ -6,6 +6,11 @@ import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.helse.rapids_rivers.asLocalDate
+import no.nav.tjeneste.virksomhet.meldekortutbetalingsgrunnlag.v1.binding.MeldekortUtbetalingsgrunnlagV1
+import no.nav.tjeneste.virksomhet.meldekortutbetalingsgrunnlag.v1.informasjon.Bruker
+import no.nav.tjeneste.virksomhet.meldekortutbetalingsgrunnlag.v1.informasjon.Periode
+import no.nav.tjeneste.virksomhet.meldekortutbetalingsgrunnlag.v1.informasjon.Tema
+import no.nav.tjeneste.virksomhet.meldekortutbetalingsgrunnlag.v1.meldinger.FinnMeldekortUtbetalingsgrunnlagListeRequest
 import no.nav.tjeneste.virksomhet.ytelseskontrakt.v3.YtelseskontraktV3
 import no.nav.tjeneste.virksomhet.ytelseskontrakt.v3.informasjon.ytelseskontrakt.WSPeriode
 import no.nav.tjeneste.virksomhet.ytelseskontrakt.v3.meldinger.WSHentYtelseskontraktListeRequest
@@ -15,7 +20,9 @@ import java.time.LocalDate
 internal class Arena(
     rapidsConnection: RapidsConnection,
     private val ytelseskontraktV3: YtelseskontraktV3,
+    private val meldekortUtbetalingsgrunnlagV1: MeldekortUtbetalingsgrunnlagV1,
     private val ytelsetype: String,
+    private val tematype: String,
     private val behov: String
 ) :
     River.PacketListener {
@@ -42,29 +49,33 @@ internal class Arena(
             keyValue("id", packet["@id"].asText()),
             keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText())
         )
+
         try {
-            ytelseskontraktV3.hentYtelseskontraktListe(WSHentYtelseskontraktListeRequest().apply {
-                personidentifikator = packet["fødselsnummer"].asText()
-                periode = WSPeriode().apply {
-                    fom = packet["periodeFom"].asLocalDate().asXmlGregorianCalendar()
-                    tom = packet["periodeTom"].asLocalDate().asXmlGregorianCalendar()
+            // ikke bruk responsen til noe ennå
+            hentMeldekortUtbetalingsgrunnlag(
+                fødselsnummer = packet["fødselsnummer"].asText(),
+                søkevindu = packet["periodeFom"].asLocalDate() to packet["periodeTom"].asLocalDate(),
+                tema = Tema().apply {
+                    value = tematype
                 }
-            }).ytelseskontraktListe
-                .filter { ytelsetype == it.ytelsestype }
-                .flatMap {
-                    it.ihtVedtak
-                        .filter { it.periodetypeForYtelse != "Stans" }
-                        .filter { it.vedtaksperiode.fom != null }
-                        .map { mapOf(
-                            "fom" to it.vedtaksperiode.fom.asLocalDate(),
-                            "tom" to (it.vedtaksperiode.tom?.asLocalDate() ?: LocalDate.now())
-                        ) }
-                }
-                .also { packet["@løsning"] = mapOf(
-                    behov to mapOf(
-                        "vedtaksperioder" to it
+            )
+        } catch (err: Exception) {
+            packet.error("feil henting av MeldekortUtbetalingsgrunnlag ved behov {} for {}: ${err.message}",
+                keyValue("id", packet["@id"].asText()),
+                keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()),
+                err
+            )
+        }
+
+        try {
+            packet["@løsning"] = mapOf(
+                behov to mapOf(
+                    "vedtaksperioder" to hentYtelsekontrakt(
+                        fødselsnummer = packet["fødselsnummer"].asText(),
+                        søkevindu = packet["periodeFom"].asLocalDate() to packet["periodeTom"].asLocalDate()
                     )
-                ) }
+                )
+            )
             context.send(packet.toJson()).also {
                 sikkerlogg.info(
                     "sender {} som {}",
@@ -80,6 +91,39 @@ internal class Arena(
             )
         }
     }
+
+    private fun hentYtelsekontrakt(fødselsnummer: String, søkevindu: Pair<LocalDate, LocalDate>) =
+        ytelseskontraktV3.hentYtelseskontraktListe(WSHentYtelseskontraktListeRequest().apply {
+            personidentifikator = fødselsnummer
+            periode = WSPeriode().apply {
+                fom = søkevindu.first.asXmlGregorianCalendar()
+                tom = søkevindu.second.asXmlGregorianCalendar()
+            }
+        }).ytelseskontraktListe
+            .filter { ytelsetype == it.ytelsestype }
+            .flatMap {
+                it.ihtVedtak
+                    .filter { it.periodetypeForYtelse != "Stans" }
+                    .filter { it.vedtaksperiode.fom != null }
+                    .map { mapOf(
+                        "fom" to it.vedtaksperiode.fom.asLocalDate(),
+                        "tom" to (it.vedtaksperiode.tom?.asLocalDate() ?: LocalDate.now())
+                    ) }
+            }
+
+    private fun hentMeldekortUtbetalingsgrunnlag(fødselsnummer: String, søkevindu: Pair<LocalDate, LocalDate>, tema: Tema) =
+        meldekortUtbetalingsgrunnlagV1.finnMeldekortUtbetalingsgrunnlagListe(FinnMeldekortUtbetalingsgrunnlagListeRequest().apply {
+            ident = Bruker().apply {
+                ident = fødselsnummer
+            }
+            periode = Periode().apply {
+                fom = søkevindu.first.asXmlGregorianCalendar()
+                tom = søkevindu.second.asXmlGregorianCalendar()
+            }
+            with (temaListe) {
+                add(tema)
+            }
+        }).meldekortUtbetalingsgrunnlagListe
 
     private fun JsonMessage.info(format: String, vararg args: Any) {
         log.info(format, *args)

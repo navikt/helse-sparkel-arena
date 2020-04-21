@@ -61,37 +61,25 @@ internal class Arena(
     }
 
     private fun håndter(packet: JsonMessage, context: RapidsConnection.MessageContext) {
-        try {
-            // ikke bruk responsen til noe ennå
-            hentMeldekortUtbetalingsgrunnlag(
-                fødselsnummer = packet["fødselsnummer"].asText(),
-                søkevindu = packet["periodeFom"].asLocalDate() to packet["periodeTom"].asLocalDate(),
-                tema = Tema().apply {
-                    value = tematype
-                }
-            )
-        } catch (err: Exception) {
-            packet.error("feil henting av MeldekortUtbetalingsgrunnlag ved behov {} for {}: ${err.message}",
-                keyValue("id", packet["@id"].asText()),
-                keyValue("vedtaksperiodeId", packet["vedtaksperiodeId"].asText()),
-                err
-            )
-        }
-
+        val fødselsnummer = packet["fødselsnummer"].asText()
+        val søkevindu = packet["periodeFom"].asLocalDate() to packet["periodeTom"].asLocalDate()
         packet["@løsning"] = mapOf(
             behov to mapOf(
                 "vedtaksperioder" to hentYtelsekontrakt(
-                    fødselsnummer = packet["fødselsnummer"].asText(),
-                    søkevindu = packet["periodeFom"].asLocalDate() to packet["periodeTom"].asLocalDate()
+                    fødselsnummer = fødselsnummer,
+                    søkevindu = søkevindu
+                ),
+                "meldekortperioder" to hentMeldekortUtbetalingsgrunnlag(
+                    fødselsnummer = fødselsnummer,
+                    søkevindu = søkevindu,
+                    tema = Tema().apply {
+                        value = tematype
+                    }
                 )
             )
         )
         context.send(packet.toJson()).also {
-            sikkerlogg.info(
-                "sender {} som {}",
-                keyValue("id", packet["@id"].asText()),
-                packet.toJson()
-            )
+            sikkerlogg.info("sender {} som {}", keyValue("id", packet["@id"].asText()), packet.toJson())
         }
     }
 
@@ -127,6 +115,19 @@ internal class Arena(
                 add(tema)
             }
         }).meldekortUtbetalingsgrunnlagListe
+            .flatMap {
+                it.vedtakListe.flatMap {
+                    it.meldekortListe.map {
+                        mapOf(
+                            "fom" to it.meldekortperiode.fom.asLocalDate(),
+                            "tom" to it.meldekortperiode.tom,
+                            "dagsats" to it.dagsats,
+                            "beløp" to it.beloep,
+                            "utbetalingsgrad" to it.utbetalingsgrad
+                        )
+                    }
+                }
+            }
 
     private fun withMDC(context: Map<String, String>, block: () -> Unit) {
         val contextMap = MDC.getCopyOfContextMap() ?: emptyMap()

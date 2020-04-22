@@ -2,10 +2,8 @@ package no.nav.helse.sparkel.arena
 
 import com.fasterxml.jackson.databind.JsonNode
 import net.logstash.logback.argument.StructuredArguments.keyValue
-import no.nav.helse.rapids_rivers.JsonMessage
-import no.nav.helse.rapids_rivers.RapidsConnection
-import no.nav.helse.rapids_rivers.River
-import no.nav.helse.rapids_rivers.asLocalDate
+import no.nav.helse.rapids_rivers.*
+import no.nav.helse.sparkel.arena.asLocalDate
 import no.nav.tjeneste.virksomhet.meldekortutbetalingsgrunnlag.v1.binding.MeldekortUtbetalingsgrunnlagV1
 import no.nav.tjeneste.virksomhet.meldekortutbetalingsgrunnlag.v1.informasjon.Bruker
 import no.nav.tjeneste.virksomhet.meldekortutbetalingsgrunnlag.v1.informasjon.Periode
@@ -34,14 +32,18 @@ internal class Arena(
 
     init {
         River(rapidsConnection).apply {
-            validate { it.requireContains("@behov", behov) }
-            validate { it.forbid("@løsning") }
+            validate { it.demandAll("@behov", listOf(behov)) }
+            validate { it.rejectKey("@løsning") }
             validate { it.requireKey("@id") }
             validate { it.requireKey("fødselsnummer") }
             validate { it.requireKey("vedtaksperiodeId") }
             validate { it.require("periodeFom", JsonNode::asLocalDate) }
             validate { it.require("periodeTom", JsonNode::asLocalDate) }
         }.register(this)
+    }
+
+    override fun onError(problems: MessageProblems, context: RapidsConnection.MessageContext) {
+        sikkerlogg.error("forstod ikke $behov:\n${problems.toExtendedReport()}")
     }
 
     override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {

@@ -120,7 +120,7 @@ internal class Arena(
                     it.meldekortListe.map {
                         mapOf(
                             "fom" to it.meldekortperiode.fom.asLocalDate(),
-                            "tom" to it.meldekortperiode.tom,
+                            "tom" to it.meldekortperiode.tom.asLocalDate(),
                             "dagsats" to it.dagsats,
                             "beløp" to it.beloep,
                             "utbetalingsgrad" to it.utbetalingsgrad

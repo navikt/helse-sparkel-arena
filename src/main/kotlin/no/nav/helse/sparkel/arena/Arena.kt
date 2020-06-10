@@ -57,7 +57,7 @@ internal class Arena(
                 packet.info("løser behov {} for {}", keyValue("id", behovId), keyValue("vedtaksperiodeId", vedtaksperiodeId))
                 håndter(packet, context)
             } catch (err: Exception) {
-                packet.error("feil ved behov {} for {}: ${err.message}", keyValue("id", behovId), keyValue("vedtaksperiodeId", vedtaksperiodeId), err)
+                packet.warn("feil ved behov {} for {}: ${err.message}", keyValue("id", behovId), keyValue("vedtaksperiodeId", vedtaksperiodeId), err)
             }
         }
     }
@@ -146,8 +146,8 @@ internal class Arena(
         sikkerlogg.info(format, *args)
     }
 
-    private fun JsonMessage.error(format: String, vararg args: Any) {
-        log.error(format, *args)
-        sikkerlogg.error(format, *args)
+    private fun JsonMessage.warn(format: String, vararg args: Any) {
+        log.warn(format, *args)
+        sikkerlogg.warn(format, *args)
     }
 }

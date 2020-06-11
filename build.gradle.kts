@@ -16,7 +16,7 @@ buildscript {
 }
 
 dependencies {
-    implementation("com.github.navikt:rapids-and-rivers:1.73dddb5")
+    implementation("com.github.navikt:rapids-and-rivers:1.74ae9cb")
 
     implementation("com.sun.xml.ws:jaxws-ri:2.3.2")
     implementation("org.apache.cxf:cxf-rt-frontend-jaxws:$cxfVersion")
@@ -39,6 +39,7 @@ val githubPassword: String by project
 
 repositories {
     mavenCentral()
+    maven("https://kotlin.bintray.com/ktor")
     maven {
         url = uri("https://maven.pkg.github.com/navikt/rapids-and-rivers")
         credentials {

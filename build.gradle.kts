@@ -17,7 +17,7 @@ buildscript {
 repositories {
     mavenCentral()
     maven("https://kotlin.bintray.com/ktor")
-    maven { url = uri("https://jitpack.io") }
+    maven("https://jitpack.io")
     maven("https://packages.confluent.io/maven/")
 }
 

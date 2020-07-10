@@ -1,13 +1,12 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
-val cxfVersion = "3.3.6"
-val tjenestespesifikasjonerVersion = "1.2020.04.07-13.52-935c1ff4afed"
-val junitJupiterVersion = "5.6.0"
-val mainClass = "no.nav.helse.sparkel.arena.AppKt"
+val cxfVersion = "3.3.7"
+val tjenestespesifikasjonerVersion = "1.2019.09.25-00.21-49b69f0625e0"
+val junitJupiterVersion = "5.6.2"
 
 plugins {
     kotlin("jvm") version "1.3.72"
 }
+
+group = "no.nav.helse"
 
 buildscript {
     dependencies {
@@ -15,10 +14,17 @@ buildscript {
     }
 }
 
-dependencies {
-    implementation("com.github.navikt:rapids-and-rivers:1.74ae9cb")
+repositories {
+    mavenCentral()
+    maven("https://kotlin.bintray.com/ktor")
+    maven { url = uri("https://jitpack.io") }
+    maven("https://packages.confluent.io/maven/")
+}
 
-    implementation("com.sun.xml.ws:jaxws-ri:2.3.2")
+dependencies {
+    implementation("com.github.navikt:rapids-and-rivers:1.2954646")
+
+    implementation("com.sun.xml.ws:jaxws-ri:2.3.3")
     implementation("org.apache.cxf:cxf-rt-frontend-jaxws:$cxfVersion")
     implementation("org.apache.cxf:cxf-rt-features-logging:$cxfVersion")
     implementation("org.apache.cxf:cxf-rt-transports-http:$cxfVersion")
@@ -28,67 +34,43 @@ dependencies {
     implementation("no.nav.tjenestespesifikasjoner:ytelseskontrakt-v3-tjenestespesifikasjon:$tjenestespesifikasjonerVersion")
     implementation("no.nav.tjenestespesifikasjoner:nav-meldekortUtbetalingsgrunnlag-v1-tjenestespesifikasjon:$tjenestespesifikasjonerVersion")
 
-    testImplementation("io.mockk:mockk:1.9.3")
+    testImplementation("io.mockk:mockk:1.10.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
 }
 
-val githubUser: String by project
-val githubPassword: String by project
-
-repositories {
-    mavenCentral()
-    maven("https://kotlin.bintray.com/ktor")
-    maven {
-        url = uri("https://maven.pkg.github.com/navikt/rapids-and-rivers")
-        credentials {
-            username = githubUser
-            password = githubPassword
-        }
+tasks {
+    compileKotlin {
+        kotlinOptions.jvmTarget = "12"
     }
-    maven("https://packages.confluent.io/maven/")
-}
+    compileTestKotlin {
+        kotlinOptions.jvmTarget = "12"
+    }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_12
-    targetCompatibility = JavaVersion.VERSION_12
-}
+    named<Jar>("jar") {
+        archiveBaseName.set("app")
 
-tasks.named<Jar>("jar") {
-    archiveBaseName.set("app")
+        manifest {
+            attributes["Main-Class"] = "no.nav.helse.sparkel.arena.AppKt"
+            attributes["Class-Path"] = configurations.runtimeClasspath.get().joinToString(separator = " ") {
+                it.name
+            }
+        }
 
-    manifest {
-        attributes["Main-Class"] = mainClass
-        attributes["Class-Path"] = configurations.runtimeClasspath.get().joinToString(separator = " ") {
-            it.name
+        doLast {
+            configurations.runtimeClasspath.get().forEach {
+                val file = File("$buildDir/libs/${it.name}")
+                if (!file.exists())
+                    it.copyTo(file)
+            }
         }
     }
 
-    doLast {
-        configurations.runtimeClasspath.get().forEach {
-            val file = File("$buildDir/libs/${it.name}")
-            if (!file.exists())
-                it.copyTo(file)
+    withType<Test> {
+        useJUnitPlatform()
+        testLogging {
+            events("passed", "skipped", "failed")
         }
     }
-}
-
-tasks.named<KotlinCompile>("compileKotlin") {
-    kotlinOptions.jvmTarget = "12"
-}
-
-tasks.named<KotlinCompile>("compileTestKotlin") {
-    kotlinOptions.jvmTarget = "12"
-}
-
-tasks.withType<Test> {
-    useJUnitPlatform()
-    testLogging {
-        events("passed", "skipped", "failed")
-    }
-}
-
-tasks.withType<Wrapper> {
-    gradleVersion = "6.0.1"
 }

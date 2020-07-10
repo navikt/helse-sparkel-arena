@@ -22,7 +22,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.navikt:rapids-and-rivers:1.2954646")
+    implementation("com.github.navikt:rapids-and-rivers:fa839faa1c")
 
     implementation("com.sun.xml.ws:jaxws-ri:2.3.3")
     implementation("org.apache.cxf:cxf-rt-frontend-jaxws:$cxfVersion")

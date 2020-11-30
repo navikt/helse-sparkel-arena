@@ -37,8 +37,8 @@ internal class Arena(
             validate { it.requireKey("@id") }
             validate { it.requireKey("fødselsnummer") }
             validate { it.requireKey("vedtaksperiodeId") }
-            validate { it.require("periodeFom", JsonNode::asLocalDate) }
-            validate { it.require("periodeTom", JsonNode::asLocalDate) }
+            validate { it.require("$behov.periodeFom", JsonNode::asLocalDate) }
+            validate { it.require("$behov.periodeTom", JsonNode::asLocalDate) }
         }.register(this)
     }
 
@@ -64,7 +64,7 @@ internal class Arena(
 
     private fun håndter(packet: JsonMessage, context: RapidsConnection.MessageContext) {
         val fødselsnummer = packet["fødselsnummer"].asText()
-        val søkevindu = packet["periodeFom"].asLocalDate() to packet["periodeTom"].asLocalDate()
+        val søkevindu = packet["$behov.periodeFom"].asLocalDate() to packet["$behov.periodeTom"].asLocalDate()
         packet["@løsning"] = mapOf(
             behov to mapOf(
                 "vedtaksperioder" to hentYtelsekontrakt(

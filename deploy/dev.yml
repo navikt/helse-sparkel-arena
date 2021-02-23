@@ -25,6 +25,8 @@ spec:
     min: 1
     max: 1
     cpuThresholdPercentage: 90
+  kafka:
+    pool: nav-dev
   prometheus:
     enabled: true
     path: /metrics
@@ -37,12 +39,10 @@ spec:
       - mountPath: /var/run/secrets/nais.io/service_user
         kvPath: /serviceuser/data/dev/srvsparkelarena
   env:
-  - name: KAFKA_BOOTSTRAP_SERVERS
-    value: b27apvl00045.preprod.local:8443,b27apvl00046.preprod.local:8443,b27apvl00047.preprod.local:8443
   - name: KAFKA_CONSUMER_GROUP_ID
-    value: sparkel-arena-v1
+    value: tbd-sparkel-arena-v1
   - name: KAFKA_RAPID_TOPIC
-    value: helse-rapid-v1
+    value: tbd.rapid.v1
   - name: STS_URL
     value: https://sts-q2.preprod.local/SecurityTokenServiceProvider/
   - name: YTELSESKONTRAKT_BASE_URL

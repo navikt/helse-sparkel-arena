@@ -3,26 +3,19 @@ val tjenestespesifikasjonerVersion = "1.2019.09.25-00.21-49b69f0625e0"
 val junitJupiterVersion = "5.6.2"
 
 plugins {
-    kotlin("jvm") version "1.3.72"
+    kotlin("jvm") version "1.4.30"
 }
 
 group = "no.nav.helse"
-
-buildscript {
-    dependencies {
-        classpath("org.junit.platform:junit-platform-gradle-plugin:1.2.0")
-    }
-}
 
 repositories {
     mavenCentral()
     maven("https://kotlin.bintray.com/ktor")
     maven("https://jitpack.io")
-    maven("https://packages.confluent.io/maven/")
 }
 
 dependencies {
-    implementation("com.github.navikt:rapids-and-rivers:fa839faa1c")
+    implementation("com.github.navikt:rapids-and-rivers:1.5e3ca6a")
 
     implementation("com.sun.xml.ws:jaxws-ri:2.3.3")
     implementation("org.apache.cxf:cxf-rt-frontend-jaxws:$cxfVersion")
@@ -42,10 +35,10 @@ dependencies {
 
 tasks {
     compileKotlin {
-        kotlinOptions.jvmTarget = "12"
+        kotlinOptions.jvmTarget = "14"
     }
     compileTestKotlin {
-        kotlinOptions.jvmTarget = "12"
+        kotlinOptions.jvmTarget = "14"
     }
 
     named<Jar>("jar") {
@@ -75,6 +68,6 @@ tasks {
     }
 
     withType<Wrapper> {
-        gradleVersion = "6.5.1"
+        gradleVersion = "6.8.3"
     }
 }

@@ -42,11 +42,11 @@ internal class Arena(
         }.register(this)
     }
 
-    override fun onError(problems: MessageProblems, context: RapidsConnection.MessageContext) {
+    override fun onError(problems: MessageProblems, context: MessageContext) {
         sikkerlogg.error("forstod ikke $behov:\n${problems.toExtendedReport()}")
     }
 
-    override fun onPacket(packet: JsonMessage, context: RapidsConnection.MessageContext) {
+    override fun onPacket(packet: JsonMessage, context: MessageContext) {
         val behovId = packet["@id"].asText()
         val vedtaksperiodeId = packet["vedtaksperiodeId"].asText()
         withMDC(mapOf(
@@ -62,7 +62,7 @@ internal class Arena(
         }
     }
 
-    private fun håndter(packet: JsonMessage, context: RapidsConnection.MessageContext) {
+    private fun håndter(packet: JsonMessage, context: MessageContext) {
         val fødselsnummer = packet["fødselsnummer"].asText()
         val søkevindu = packet["$behov.periodeFom"].asLocalDate() to packet["$behov.periodeTom"].asLocalDate()
         packet["@løsning"] = mapOf(
@@ -80,7 +80,7 @@ internal class Arena(
                 )
             )
         )
-        context.send(packet.toJson()).also {
+        context.publish(packet.toJson()).also {
             sikkerlogg.info("sender {} som {}", keyValue("id", packet["@id"].asText()), packet.toJson())
         }
     }
